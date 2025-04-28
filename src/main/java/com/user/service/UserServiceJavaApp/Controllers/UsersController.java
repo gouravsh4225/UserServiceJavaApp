@@ -1,16 +1,18 @@
 package com.user.service.UserServiceJavaApp.Controllers;
-
-import com.user.service.UserServiceJavaApp.Model.UserModel;
+import com.user.service.UserServiceJavaApp.Model.UserModel.UpdateRequestUserModel;
+import com.user.service.UserServiceJavaApp.Response.ResponseHandler;
+import com.user.service.UserServiceJavaApp.Model.UserModel.UserModel;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.catalina.User;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.List;
 
+import java.util.*;
+
+@Slf4j
 @RestController
 @AllArgsConstructor
 @RequestMapping("/users")
@@ -30,25 +32,56 @@ public class UsersController {
 
 
     @GetMapping
-    public List<UserModel> getAllUser() {
-        return getUserList();
+    public ResponseEntity<Object> getAllUser() {
+        List<UserModel> userLists = getUserList();
+        return ResponseHandler.generateResponse(true,userLists,HttpStatus.OK);
     }
 
     @GetMapping("/{id}")
-    public UserModel getUserById(@PathVariable int id) {
-        System.out.println(id);
-        var userList = getAllUser();
-        System.out.println(userList);
-//        userList.stream().map(BigDecimal::new)
-//                .map(this::findByIdPointage)
-//                .collect(Collectors.toList())
-//        var userLoopIndex = 0;
-//        while (userLoopIndex < userList.size()) {
-//            System.out.println(userList.get(userLoopIndex));
-//            userLoopIndex++;
-//        }
+    public ResponseEntity<Object> getUserById(@PathVariable int id) {
+        List<UserModel> userList = getUserList();
+       return userList.stream()
+                .filter(userItem -> userItem.getId() == id)
+                .findFirst()
+                .map(user -> ResponseHandler.generateResponse(true, user, HttpStatus.OK))
+                .orElseGet(() -> ResponseHandler.generateResponse(false, "User not found with ID: " + id, HttpStatus.NOT_FOUND));
 
-        UserModel userOfIndexZero = userList.get(0);
-        return userOfIndexZero;
+    }
+    @PutMapping("/{id}")
+    public ResponseEntity<Object> updateUserById(@PathVariable int id, @RequestBody UpdateRequestUserModel updateUserData) {
+        List<UserModel> userAllList = getUserList();
+        Optional<UserModel> userOptional = userAllList.stream().filter(user-> user.getId() == id).findFirst();
+        if(userOptional.isPresent()) {
+            UserModel updateUser = userOptional.get();
+            updateUser.setName(updateUserData.getName());
+            updateUser.setEmail(updateUserData.getEmail());
+            updateUser.setAddress(updateUserData.getAddress());
+            return ResponseHandler.generateResponse(true,updateUser,HttpStatus.OK);
+        } else {
+            return ResponseHandler.generateResponse(false,"User is not found " + id,HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Object> deleteUserById(@PathVariable int id) {
+        List<UserModel> userAllList = getUserList();
+        /* first way */
+//        boolean userRemoved = userAllList.removeIf(user -> user.getId() == id);
+//        if(userRemoved) {
+//            return  ResponseHandler.generateResponse(true,"User is removed",HttpStatus.OK);
+//        } else {
+//            return  ResponseHandler.generateResponse(false,"User is not found" + id,HttpStatus.NOT_FOUND);
+//        }
+        /* second way and when we need to return object */
+        UserModel currentUser = userAllList.stream().filter(user -> user.getId() == id).findFirst().orElse(null);
+        if(currentUser != null) {
+            userAllList.remove(currentUser);
+            return  ResponseHandler.generateResponse(true,currentUser,HttpStatus.OK);
+        } else  {
+     return  ResponseHandler.generateResponse(false,"User is not found" + id,HttpStatus.NOT_FOUND);
+        }
+
+
+
     }
 }
