@@ -1,7 +1,8 @@
-package com.user.service.UserServiceJavaApp.Model;
+package com.user.service.UserServiceJavaApp.Model.UserModel;
 
-import java.util.List;
+import lombok.Data;
 
+@Data
 public class UserModel {
     private int id;
     private String name;
